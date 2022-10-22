@@ -29,11 +29,29 @@ void reading_channel(char a[])
     close(fd);
 }
 
+void reading_users_info(char a[]){
+    FILE* fd= fopen("canal", "r");
+    while(1){
+        if(fgets(a, 80,fd) == NULL) {
+            break;
+        }
+        fgets(a, 80, fd);
+        fprintf(stdout, "%s\n", a);
+        fgets(a, 80, fd);
+        fprintf(stdout, "%s\n", a);
+        fgets(a, 80, fd);
+        fprintf(stdout, "%s\n", a);
+        fgets(a, 80, fd);
+        fprintf(stdout, "%s\n", a);
+    }
+    fclose(fd);
+}
+
 int main()
 {
     int fd;
     mkfifo("canal",0666);
-    char a[80], b[80], mesaj[20];
+    char a[80], b[80],mesaj[20];
     while(1){
 
         if(strstr(a,"username")==NULL)
@@ -43,21 +61,25 @@ int main()
 
         // se scrie si transmite informatia catre server
         fgets(b, 80, stdin);
+        strcpy(mesaj,b);
         writing_channel(b);
         printf("\n");
 
         //se deschide canalul de citire pentru a primi informatiile de la server
+        if( strstr(b,"users")!=NULL && strstr(mesaj,"login")){
+            reading_users_info(a);
+        }
+        else{
         reading_channel(a);
         printf("SERVER: %s\n", a);
+        }
 
-        strcpy(mesaj, "username");
-        if(strstr(a,mesaj) !=NULL){
+        if(strstr(a,"username") !=NULL){
             printf("Username: ");
         }
 
         //goodbye ==> quit
-        strcpy(mesaj,"Goodbye");
-        if( strstr(a,mesaj) != NULL) {
+        if( strstr(a,"Goodbye") != NULL) {
             quit();
         }
     }

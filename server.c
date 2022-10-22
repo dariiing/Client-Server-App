@@ -3,10 +3,12 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/socket.h>
 #include <unistd.h>
 #include <signal.h> 
 #include <string.h>
 #include <stdlib.h>
+#include <utmp.h>
 
 int search( char a[]){
     char user[80];
@@ -94,16 +96,104 @@ void reading_channel(char a[]) // opening fifo reading channel
     close(fd);
 }
 
+struct my_utmp{
+    char user[32], host[256];
+    struct{
+        int32_t sec;
+        int32_t usec;
+    }tv;
+}a[256];
+
+void get_users(){
+    int sockp[2], p, k = 0;
+    struct utmp *data;
+    if(socketpair(AF_UNIX, SOCK_STREAM, 0, sockp) < 0){
+        printf("Error occured at socketpair");
+    }
+    else {
+        printf("Socketpair opened\n");
+    }
+    p = fork();
+
+    if( p < 0 ){
+        printf("Error occured at fork");
+    }
+    else if( p == 0 ){
+        printf("We're in the child\n");
+        close(sockp[1]);// parent file descriptor
+
+        data = getutent(); // man:  It returns a pointer to a structure containing the fields of the line. The definition of this structure is shown in utmp(5)
+        // username: char ut_user[UT_NAMESIZE]
+        // hostname for remote login: char ut_host[UT_HOSTSIZE]
+        // time entry was made
+        // #define UT_NAMESIZE  32
+        // #define UT_HOSTSIZE  256
+        while(data != NULL)
+        {
+            strcpy(a[k].user, data -> ut_user);
+            strcpy(a[k].host, data -> ut_host);
+            a[k].tv.sec = data -> ut_tv.tv_sec;
+            a[k].tv.usec = data -> ut_tv.tv_usec;
+            k++;
+            data = getutent();
+        }
+
+        write(sockp[0], &k, sizeof(int)); // sends size of a[]
+
+        int i;
+        for(i = 0; i<k;i++)
+        {
+            write(sockp[0], &a[i].user, sizeof(a[i].user)+1);
+            write(sockp[0], &a[i].host, sizeof(a[i].host)+1);
+            write(sockp[0], &a[i].tv.sec, sizeof(int));
+            write(sockp[0], &a[i].tv.usec, sizeof(int));
+        }
+        printf("Leaving child\n");
+        close(sockp[0]);
+        exit(0);
+    }
+    else{
+        wait(NULL);
+        printf("We're in the parent\n");
+        close(sockp[0]);
+
+        read(sockp[1], &k, sizeof(int));
+
+        int i;
+        for(i = 0;i < k; i++)
+        {
+            read(sockp[1], &a[i].user, sizeof(a[i].user)+1);
+            read(sockp[1], &a[i].host, sizeof(a[i].host)+1);
+            read(sockp[1], &a[i].tv.sec, sizeof(int));
+            read(sockp[1], &a[i].tv.usec, sizeof(int));
+        }
+        close(sockp[1]);
+        
+        FILE* fd = fopen("canal", "w");
+        for(i = 0; i < k ; i++){
+            fprintf(fd, "User %s\n",a[i].user);
+            fprintf(fd, "Host %s\n",a[i].host);
+            fprintf(fd, "Sec %d\n",a[i].tv.sec);
+            fprintf(fd, "Usec %d\n",a[i].tv.usec);
+            printf("User %s\n",a[i].user);
+            printf("Host %s\n",a[i].host);
+            printf("Sec %d\n",a[i].tv.sec);
+            printf("Usec %d\n",a[i].tv.usec);
+            fprintf(fd, "\n");
+        }
+        fclose(fd);
+        printf("Leaving the parent\n");
+    }
+}
 int main()
 {
     int logged;
     mkfifo("canal",0666);
-    char a[80], b[80], mesaj[20];
+    char a[80], b[80];
     while(1){
         reading_channel(a);
         printf("CLIENTUL cere: %s\n", a); // comanda dorita de client
-        strcpy(mesaj, "login");
-        if( strstr(a,mesaj) != NULL && logged == 0){
+        if( strstr(a,"login") != NULL && logged == 0){
             strcpy(b,"Write your username");
             writing_channel(b);
 
@@ -114,30 +204,27 @@ int main()
             printf("logged %d\n",logged);
 
         }
-        else if(strstr(a,mesaj) != NULL && logged == 1){
+        else if(strstr(a,"login") != NULL && logged == 1){
             printf("already logged in\n");
             strcpy(b,"Already logged in");
             writing_channel(b);
         }
-        else if(0 == 0){
+        else if(strstr(a,"users") != NULL && logged == 1 ){
+            get_users();
+        }
         //apel logout
-        strcpy(mesaj, "logout");
-        if(strstr(a,mesaj) != NULL && logged == 1){
+        else if(strstr(a,"logout") != NULL && logged == 1){
             logged = 0;
             printf("logged %d\n", logged);
             strcpy(b,"Logged out succesfully");
             writing_channel(b);
         }
-        else if(strstr(a,mesaj) != NULL && logged == 0){
-            logged = 0;
+        else if((strstr(a,"logout") != NULL && logged == 0 ) || ( strstr(a,"users") != NULL && logged == 0 )){
             printf("logged %d\n", logged);
             strcpy(b,"Not logged in");
             writing_channel(b);
         }
-        else if(0 == 0){
-        // apel quit
-        strcpy(mesaj,"quit");
-        if(strstr(a,mesaj)!=NULL){
+        else if(strstr(a,"quit")!=NULL){
             printf("Se inchid programele\n");
             strcpy(b,"Goodbye");
             writing_channel(b);
@@ -148,8 +235,8 @@ int main()
             strcpy(b,"Unknown command, try again");
             writing_channel(b);
         }
-        }
+        
     }
-    }
+
     return 0;
 }
