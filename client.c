@@ -16,26 +16,38 @@ void quit()
     kill(current_pid,SIGKILL);
 }
 
+void writing_channel(char b[]){
+    int fd = open("canal", O_WRONLY);
+    write(fd, b, strlen(b)+1);
+    close(fd);
+}
+
+void reading_channel(char a[])
+{
+    int fd = open("canal", O_RDONLY);
+    read(fd, a, 80);
+    close(fd);
+}
+
 int main()
 {
     int fd;
     mkfifo("canal",0666);
     char a[80], b[80], mesaj[20];
     while(1){
-        if(strstr(a,"username")==NULL) //ASTA VA FI PUSA PT FIECARE CAZ, momentan if-ul acesta este temporar
+
+        if(strstr(a,"username")==NULL)
         {
-            printf("CLIENT: ");//clientul scrie
+            printf("CLIENT: ");
         }
+
         // se scrie si transmite informatia catre server
-        fd = open("canal", O_WRONLY); 
         fgets(b, 80, stdin);
+        writing_channel(b);
         printf("\n");
-        write(fd, b, strlen(b)+1); 
-        close(fd); 
 
         //se deschide canalul de citire pentru a primi informatiile de la server
-        fd = open("canal",O_RDONLY);
-        read(fd, a, sizeof(a));
+        reading_channel(a);
         printf("SERVER: %s\n", a);
 
         strcpy(mesaj, "username");

@@ -75,44 +75,40 @@ int search( char a[]){
     }
 }
 
-int login() {
-    int fd, p;
-    char b[80];
-    fd = open("canal", O_WRONLY);
-    strcpy(b,"Write your username");
-    write(fd, b, strlen(b)+1);
-    close(fd);
-    return 1;
-}
-
 void quit()
 {
     pid_t current_pid = getpid();
     kill(current_pid,SIGKILL);
 }
 
+void writing_channel(char b[]){ // opening fifo writing channel
+    int fd = open("canal", O_WRONLY);
+    write(fd, b, strlen(b)+1);
+    close(fd);
+}
+
+void reading_channel(char a[]) // opening fifo reading channel
+{
+    int fd = open("canal", O_RDONLY);
+    read(fd, a, 80);
+    close(fd);
+}
+
 int main()
 {
-    int fd, logged,length;
+    int logged;
     mkfifo("canal",0666);
     char a[80], b[80], mesaj[20];
     while(1){
-        fd = open("canal", O_RDONLY);
-        read(fd, a, 80);
+        reading_channel(a);
         printf("CLIENTUL cere: %s\n", a); // comanda dorita de client
-        close(fd);
         strcpy(mesaj, "login");
         if( strstr(a,mesaj) != NULL && logged == 0){
-
-            fd = open("canal", O_WRONLY);
             strcpy(b,"Write your username");
-            write(fd, b, strlen(b)+1);
-            close(fd);
+            writing_channel(b);
 
-            fd = open("canal", O_RDONLY);
-            read(fd, a, 80);
+            reading_channel(a);
             printf("Username-ul este: %s\n", a); 
-            close(fd);
 
             logged = search(a); // daca 1 = logged, 0 else
             printf("logged %d\n",logged);
@@ -120,10 +116,8 @@ int main()
         }
         else if(strstr(a,mesaj) != NULL && logged == 1){
             printf("already logged in\n");
-            fd = open("canal", O_WRONLY);
             strcpy(b,"Already logged in");
-            write(fd, b, strlen(b)+1);
-            close(fd);
+            writing_channel(b);
         }
         else if(0 == 0){
         //apel logout
@@ -131,36 +125,28 @@ int main()
         if(strstr(a,mesaj) != NULL && logged == 1){
             logged = 0;
             printf("logged %d\n", logged);
-            fd = open("canal", O_WRONLY);
             strcpy(b,"Logged out succesfully");
-            write(fd, b, strlen(b)+1);
-            close(fd);
+            writing_channel(b);
         }
-        if(strstr(a,mesaj) != NULL && logged == 0){
+        else if(strstr(a,mesaj) != NULL && logged == 0){
             logged = 0;
             printf("logged %d\n", logged);
-            fd = open("canal", O_WRONLY);
             strcpy(b,"Not logged in");
-            write(fd, b, strlen(b)+1);
-            close(fd);
+            writing_channel(b);
         }
         else if(0 == 0){
         // apel quit
         strcpy(mesaj,"quit");
         if(strstr(a,mesaj)!=NULL){
             printf("Se inchid programele\n");
-            fd = open("canal", O_WRONLY);
             strcpy(b,"Goodbye");
-            write(fd, b, strlen(b)+1);
-            close(fd);
+            writing_channel(b);
             quit();
         }
         else{ // nu cunoaste comanda
             printf("unknown command\n");
-            fd = open("canal", O_WRONLY); 
             strcpy(b,"Unknown command, try again");
-            write(fd, b, strlen(b)+1); 
-            close(fd);
+            writing_channel(b);
         }
         }
     }
