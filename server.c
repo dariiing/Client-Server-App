@@ -17,6 +17,7 @@ int search( char a[]){
     int file_desc[2];
     if(pipe(file_desc)<0){
         printf("Error at pipe");
+        exit(1);
     }
     else{
         printf("Pipe opened\n");
@@ -24,6 +25,7 @@ int search( char a[]){
     p = fork();
     if( p < 0) {
         printf("Error occured at fork");
+        exit(1);
     }
     else if (p == 0){
        printf("Currently in the child\n");
@@ -31,6 +33,7 @@ int search( char a[]){
        ptr = fopen("clienti.txt","r"); // deschid fisierul care contine username-urile
        if(ptr == NULL){
         printf("An error occured at opening the clients file");
+        exit(1);
         }
        else{ 
         printf("File opened\n");
@@ -65,6 +68,13 @@ int search( char a[]){
 
         //trimit mesaj catre client
         int fd = open("canal", O_WRONLY);
+        if(fd == -1){
+            printf("An error occured at opening the channel");
+            exit(1);
+        }
+        else{ 
+        printf("File opened\n");
+       }
         if(ok == 1){
         strcpy(user,"User found. Welcome back!");
         write(fd, user, strlen(user)+1);
@@ -86,6 +96,13 @@ void quit()
 
 void writing_channel(char b[]){ // opening fifo writing channel
     int fd = open("canal", O_WRONLY);
+    if(fd == -1){
+        printf("An error occured at opening the channel");
+        exit(1);
+        }
+       else{ 
+        printf("File opened\n");
+       }
     write(fd, b, strlen(b)+1);
     close(fd);
 }
@@ -93,6 +110,13 @@ void writing_channel(char b[]){ // opening fifo writing channel
 void reading_channel(char a[]) // opening fifo reading channel
 {
     int fd = open("canal", O_RDONLY);
+    if(fd == -1){
+        printf("An error occured at opening the channel");
+        exit(1);
+        }
+       else{ 
+        printf("File opened\n");
+       }
     read(fd, a, 80);
     close(fd);
 }
@@ -110,6 +134,7 @@ void get_users(){
     struct utmp *data;
     if(socketpair(AF_UNIX, SOCK_STREAM, 0, sockp) < 0){
         printf("Error occured at socketpair");
+        exit(1);
     }
     else {
         printf("Socketpair opened\n");
@@ -118,6 +143,7 @@ void get_users(){
 
     if( p < 0 ){
         printf("Error occured at fork");
+        exit(1);
     }
     else if( p == 0 ){
         printf("We're in the child\n");
@@ -172,6 +198,13 @@ void get_users(){
         close(sockp[0]);
         
         FILE* fd = fopen("canal", "w");
+        if(fd == NULL){
+            printf("An error occured at opening the channel");
+            exit(1);
+        }
+        else{ 
+            printf("File opened\n");
+        }
         for(i = 0; i < k ; i++){
             fprintf(fd, "User %s\n",a[i].user);
             fprintf(fd, "Host %s\n",a[i].host);
@@ -196,6 +229,7 @@ void get_info(char pid[]){
     struct my_info b[100];
     if(socketpair(AF_UNIX, SOCK_STREAM, 0, sockp) < 0){
         printf("Error occured at socketpair");
+        exit(1);
     }
     else {
         printf("Socketpair opened\n");
@@ -204,6 +238,7 @@ void get_info(char pid[]){
     p = fork();
     if( p < 0){
         printf("Error occured at fork");
+        exit(1);
     }
     else if(p == 0){
         printf("We're in the child\n");
@@ -221,6 +256,7 @@ void get_info(char pid[]){
         FILE* ptr = fopen(file, "r");
         if(ptr == NULL){
             printf("Error at opening");
+            exit(1);
         }
         else{
             printf("File opened\n");
@@ -269,6 +305,13 @@ void get_info(char pid[]){
         close(sockp[0]);
 
         FILE* fd = fopen("canal","w");
+        if(fd == NULL){
+            printf("An error occured at opening the channel");
+            exit(1);
+        }
+        else{ 
+            printf("File opened\n");
+       }
         fprintf(fd, "%s\n",b[k].name);
         fprintf(fd, "%s\n",b[k].state);
         fprintf(fd, "%s\n",b[k].ppid);

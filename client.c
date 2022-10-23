@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <signal.h> 
 #include <string.h>
+#include <stdlib.h>
 
 
 // mai intai clientul furnizeaza informatia => acesta scrie, serverul ii preia comenzile si le va transmite inapoi 
@@ -18,6 +19,10 @@ void quit()
 
 void writing_channel(char b[]){
     int fd = open("canal", O_WRONLY);
+    if(fd == -1){
+        printf("An error occured at opening the channel");
+        exit(1);
+        }
     write(fd, b, strlen(b)+1);
     close(fd);
 }
@@ -25,12 +30,20 @@ void writing_channel(char b[]){
 void reading_channel(char a[])
 {
     int fd = open("canal", O_RDONLY);
+    if(fd == -1){
+        printf("An error occured at opening the channel");
+        exit(1);
+        }
     read(fd, a, 80);
     close(fd);
 }
 
 void reading_users_info(){
     FILE* fd= fopen("canal", "r");
+    if(fd == NULL){
+        printf("An error occured at opening the channel");
+        exit(1);
+        }
     char buf[256];
     while(fgets(buf, 256,fd) != NULL){
         buf[strlen(buf)-1]='\0';
@@ -50,6 +63,10 @@ void reading_users_info(){
 
 void reading_proc_info(){
     FILE* fd= fopen("canal", "r");
+    if(fd == NULL){
+        printf("An error occured at opening the channel");
+        exit(1);
+        }
     char buf[80];
     int i;
     for( i = 0; i < 5; i++) {
@@ -76,10 +93,10 @@ int main()
         printf("\n");
 
         //se deschide canalul de citire pentru a primi informatiile de la server
-        if( strstr(b,"users")!=NULL && login == 1){ // pt comanda users
+        if( strstr(b,"users")!=NULL && login == 1){ // pt comanda users: get-logged-users
             reading_users_info();
         }
-        else if( ok == 1 && login == 1 && ok1 == 0){ // pt comanda users
+        else if( ok == 1 && login == 1 && ok1 == 0){ // pt comanda info : get-proc-info
             reading_proc_info();
             printf("\nCLIENT: ");
             ok1 = 1;
