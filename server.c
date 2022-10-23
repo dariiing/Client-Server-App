@@ -212,12 +212,19 @@ void get_info(char pid[]){
         //create /proc/pid/status 
         char file[80];
         file[0]='\0';
+
         strcat(file, "/proc/");
         strcat(pid, "/status");
         strcat(file, pid);
         printf("File created: %s\n",file);
 
         FILE* ptr = fopen(file, "r");
+        if(ptr == NULL){
+            printf("Error at opening");
+        }
+        else{
+            printf("File opened\n");
+        }
         char info[80];
         while(fgets(info, 80, ptr) != NULL){
             
@@ -262,11 +269,11 @@ void get_info(char pid[]){
         close(sockp[0]);
 
         FILE* fd = fopen("canal","w");
-        fprintf(fd, "Name %s\n",b[k].name);
-        fprintf(fd, "State %s\n",b[k].state);
-        fprintf(fd, "Ppid %s\n",b[k].ppid);
-        fprintf(fd, "Uid %s\n",b[k].uid);
-        fprintf(fd, "VmSize %s\n",b[k].vmsize);
+        fprintf(fd, "%s\n",b[k].name);
+        fprintf(fd, "%s\n",b[k].state);
+        fprintf(fd, "%s\n",b[k].ppid);
+        fprintf(fd, "%s\n",b[k].uid);
+        fprintf(fd, "%s\n",b[k].vmsize);
         printf("Name %s\n",b[k].name);
         printf("State %s\n",b[k].state);
         printf("Ppid %s\n",b[k].ppid);
@@ -311,6 +318,7 @@ int main()
 
             reading_channel(a);
             printf("pid-ul este: %s\n", a);
+            a[strlen(a)-1]='\0';
             get_info(a);
         }
         //apel logout
