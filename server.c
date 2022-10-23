@@ -187,7 +187,97 @@ void get_users(){
         printf("Leaving the parent\n");
     }
 }
+struct my_info{
+    char name[80], state[80],ppid[80],uid[80],vmsize[80];
+}b[100];
 
+void get_info(char pid[]){
+    int sockp[2], p;
+    if(socketpair(AF_UNIX, SOCK_STREAM, 0, sockp) < 0){
+        printf("Error occured at socketpair");
+    }
+    else {
+        printf("Socketpair opened\n");
+    }
+
+    p = fork();
+    if( p < 0){
+        printf("Error occured at fork");
+    }
+    else if(p == 0){
+        printf("We're in the child\n");
+        close(sockp[0]);
+
+        //create /proc/pid/status 
+        char file[80];
+        file[0]='\0';
+        strcat(file, "/proc/");
+        strcat(pid, "/status");
+        strcat(file, pid);
+        printf("File created: %s\n",file);
+
+        FILE* ptr = fopen(file, "r");
+        char info[80];
+        int k = 0;
+        while(fgets(info, 80, ptr) != NULL){
+            
+            info[strlen(info)-1]='\0';
+            if(strstr(info, "Name") != NULL){
+                strcpy(b[k].name,info);
+            }
+            else if(strstr(info, "State") != NULL){
+                strcpy(b[k].state,info);
+            }
+            else if(strstr(info, "PPid") != NULL){
+                strcpy(b[k].ppid,info);
+            }
+            else if(strstr(info, "Uid") != NULL){
+                strcpy(b[k].uid,info);
+            }
+            else if(strstr(info, "VmSize") != NULL){
+                strcpy(b[k].vmsize,info);
+            }
+        }
+        fclose(ptr);
+
+        write(sockp[1],b[k].name, sizeof(b[k].name));
+        write(sockp[1],b[k].state, sizeof(b[k].state));
+        write(sockp[1],b[k].ppid, sizeof(b[k].ppid));
+        write(sockp[1],b[k].uid,sizeof(b[k].uid));
+        write(sockp[1],b[k].vmsize,sizeof(b[k].vmsize));
+
+        close(sockp[1]);
+        printf("Leaving child\n");
+        exit(0);
+    }
+    else{//parinte
+        wait(NULL);
+        close(sockp[1]);
+        printf("We're in the parent\n");
+        int k = 0;
+        read(sockp[1],b[k].name, sizeof(b[k].name));
+        read(sockp[1],b[k].state, sizeof(b[k].state));
+        read(sockp[1],b[k].ppid, sizeof(b[k].ppid));
+        read(sockp[1],b[k].uid,sizeof(b[k].uid));
+        read(sockp[1],b[k].vmsize,sizeof(b[k].vmsize));
+        close(sockp[0]);
+
+        FILE* fd = fopen("canal","w");
+        fprintf(fd, "Name %s\n",b[k].name);
+        fprintf(fd, "State %s\n",b[k].state);
+        fprintf(fd, "Ppid %s\n",b[k].ppid);
+        fprintf(fd, "Uid %s\n",b[k].uid);
+        fprintf(fd, "VmSize %s\n",b[k].vmsize);
+        printf("Name %s\n",b[k].name);
+        printf("State %s\n",b[k].state);
+        printf("Ppid %s\n",b[k].ppid);
+        printf("Uid %s\n",b[k].uid);
+        printf("VmSize %s\n",b[k].vmsize);
+        
+        fclose(fd);
+        printf("Leaving the parent\n");
+    }
+}
 
 int main()
 {
@@ -216,6 +306,14 @@ int main()
         else if(strstr(a,"users") != NULL && logged == 1 ){
             get_users();
         }
+        else if(strstr(a, "info") != NULL && logged == 1 ){
+            strcpy(b,"Write the process id");
+            writing_channel(b);
+
+            reading_channel(a);
+            printf("pid-ul este: %s\n", a);
+            get_info(a);
+        }
         //apel logout
         else if(strstr(a,"logout") != NULL && logged == 1){
             logged = 0;
@@ -223,7 +321,7 @@ int main()
             strcpy(b,"Logged out succesfully");
             writing_channel(b);
         }
-        else if((strstr(a,"logout") != NULL && logged == 0 ) || ( strstr(a,"users") != NULL && logged == 0 )){
+        else if((strstr(a,"logout") != NULL && logged == 0 ) || ( strstr(a,"users") != NULL && logged == 0 ) || ( strstr(a,"info") != NULL && logged == 0 )){
             printf("logged %d\n", logged);
             strcpy(b,"Not logged in");
             writing_channel(b);
