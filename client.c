@@ -29,20 +29,22 @@ void reading_channel(char a[])
     close(fd);
 }
 
-void reading_users_info(char a[]){
+void reading_users_info(){
     FILE* fd= fopen("canal", "r");
-    while(1){
-        if(fgets(a, 80,fd) == NULL) {
-            break;
-        }
-        fgets(a, 80, fd);
-        fprintf(stdout, "%s\n", a);
-        fgets(a, 80, fd);
-        fprintf(stdout, "%s\n", a);
-        fgets(a, 80, fd);
-        fprintf(stdout, "%s\n", a);
-        fgets(a, 80, fd);
-        fprintf(stdout, "%s\n", a);
+    char buf[256];
+     int sec, usec;
+    while(fgets(buf, 256,fd) != NULL){
+        buf[strlen(buf)-1]='\0';
+        fprintf(stdout, "%s\n", buf);
+        fgets(buf, 256, fd);
+        buf[strlen(buf)-1]='\0';
+        fprintf(stdout, "%s\n", buf);
+        fgets(buf, 256, fd);
+        buf[strlen(buf)-1]='\0';
+        fprintf(stdout, "Sec %s\n", buf);
+        fgets(buf, 256, fd);
+        buf[strlen(buf)-1]='\0';
+        fprintf(stdout, "Usec %s\n\n\n", buf);
     }
     fclose(fd);
 }
@@ -51,9 +53,9 @@ int main()
 {
     int fd;
     mkfifo("canal",0666);
-    char a[80], b[80],mesaj[20];
+    char a[80], b[80];
+    int login = 0;
     while(1){
-
         if(strstr(a,"username")==NULL)
         {
             printf("CLIENT: ");
@@ -61,17 +63,22 @@ int main()
 
         // se scrie si transmite informatia catre server
         fgets(b, 80, stdin);
-        strcpy(mesaj,b);
         writing_channel(b);
         printf("\n");
 
         //se deschide canalul de citire pentru a primi informatiile de la server
-        if( strstr(b,"users")!=NULL && strstr(mesaj,"login")){
-            reading_users_info(a);
+        if( strstr(b,"users")!=NULL && login == 1){ // pt comanda users
+            reading_users_info();
         }
         else{
-        reading_channel(a);
+        reading_channel(a); // pt celelalte comenzi
         printf("SERVER: %s\n", a);
+        if( strstr(a,"User found") != NULL) {
+            login = 1;
+        }
+        if( strstr(a,"Logged out") != NULL) {
+            login = 0;
+        }
         }
 
         if(strstr(a,"username") !=NULL){

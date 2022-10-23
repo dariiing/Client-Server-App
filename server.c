@@ -9,6 +9,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <utmp.h>
+#include <wait.h>
 
 int search( char a[]){
     char user[80];
@@ -120,7 +121,7 @@ void get_users(){
     }
     else if( p == 0 ){
         printf("We're in the child\n");
-        close(sockp[1]);// parent file descriptor
+        close(sockp[0]);// parent file descriptor
 
         data = getutent(); // man:  It returns a pointer to a structure containing the fields of the line. The definition of this structure is shown in utmp(5)
         // username: char ut_user[UT_NAMESIZE]
@@ -130,61 +131,64 @@ void get_users(){
         // #define UT_HOSTSIZE  256
         while(data != NULL)
         {
-            strcpy(a[k].user, data -> ut_user);
-            strcpy(a[k].host, data -> ut_host);
+            strncpy(a[k].user, data -> ut_user,32);
+            a[k].user[32]='\0';
+            strncpy(a[k].host, data -> ut_host, 256);
+            a[k].host[256]='\0';
             a[k].tv.sec = data -> ut_tv.tv_sec;
             a[k].tv.usec = data -> ut_tv.tv_usec;
             k++;
             data = getutent();
         }
 
-        write(sockp[0], &k, sizeof(int)); // sends size of a[]
-
+        write(sockp[1], &k, sizeof(int)); // sends size of a[]
         int i;
         for(i = 0; i<k;i++)
         {
-            write(sockp[0], &a[i].user, sizeof(a[i].user)+1);
-            write(sockp[0], &a[i].host, sizeof(a[i].host)+1);
-            write(sockp[0], &a[i].tv.sec, sizeof(int));
-            write(sockp[0], &a[i].tv.usec, sizeof(int));
+            write(sockp[1], a[i].user, sizeof(a[i].user));
+            write(sockp[1], a[i].host, sizeof(a[i].host));
+            write(sockp[1], &a[i].tv.sec, sizeof(int));
+            write(sockp[1], &a[i].tv.usec, sizeof(int));
         }
         printf("Leaving child\n");
-        close(sockp[0]);
+        close(sockp[1]);
         exit(0);
     }
     else{
         wait(NULL);
         printf("We're in the parent\n");
-        close(sockp[0]);
+        close(sockp[1]);
 
-        read(sockp[1], &k, sizeof(int));
+        read(sockp[0], &k, sizeof(int));
 
         int i;
         for(i = 0;i < k; i++)
         {
-            read(sockp[1], &a[i].user, sizeof(a[i].user)+1);
-            read(sockp[1], &a[i].host, sizeof(a[i].host)+1);
-            read(sockp[1], &a[i].tv.sec, sizeof(int));
-            read(sockp[1], &a[i].tv.usec, sizeof(int));
+            read(sockp[0], a[i].user, sizeof(a[i].user));
+            read(sockp[0], a[i].host, sizeof(a[i].host));
+            read(sockp[0], &a[i].tv.sec, sizeof(int));
+            read(sockp[0], &a[i].tv.usec, sizeof(int));
         }
-        close(sockp[1]);
+        close(sockp[0]);
         
         FILE* fd = fopen("canal", "w");
         for(i = 0; i < k ; i++){
             fprintf(fd, "User %s\n",a[i].user);
             fprintf(fd, "Host %s\n",a[i].host);
-            fprintf(fd, "Sec %d\n",a[i].tv.sec);
-            fprintf(fd, "Usec %d\n",a[i].tv.usec);
-            printf("User %s\n",a[i].user);
-            printf("Host %s\n",a[i].host);
-            printf("Sec %d\n",a[i].tv.sec);
-            printf("Usec %d\n",a[i].tv.usec);
-            fprintf(fd, "\n");
+            fprintf(fd, "%d\n",a[i].tv.sec);
+            fprintf(fd, "%d\n",a[i].tv.usec);
+            printf("User %s ",a[i].user);
+            printf("Host %s ",a[i].host);
+            printf("Sec %d ",a[i].tv.sec);
+            printf("Usec %d ",a[i].tv.usec);
+            printf("\n");
         }
         fclose(fd);
         printf("Leaving the parent\n");
     }
 }
+
+
 int main()
 {
     int logged;
