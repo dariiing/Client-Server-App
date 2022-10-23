@@ -189,10 +189,11 @@ void get_users(){
 }
 struct my_info{
     char name[80], state[80],ppid[80],uid[80],vmsize[80];
-}b[100];
+};
 
 void get_info(char pid[]){
-    int sockp[2], p;
+    int sockp[2], p,k = 0;
+    struct my_info b[100];
     if(socketpair(AF_UNIX, SOCK_STREAM, 0, sockp) < 0){
         printf("Error occured at socketpair");
     }
@@ -218,7 +219,6 @@ void get_info(char pid[]){
 
         FILE* ptr = fopen(file, "r");
         char info[80];
-        int k = 0;
         while(fgets(info, 80, ptr) != NULL){
             
             info[strlen(info)-1]='\0';
@@ -254,12 +254,11 @@ void get_info(char pid[]){
         wait(NULL);
         close(sockp[1]);
         printf("We're in the parent\n");
-        int k = 0;
-        read(sockp[1],b[k].name, sizeof(b[k].name));
-        read(sockp[1],b[k].state, sizeof(b[k].state));
-        read(sockp[1],b[k].ppid, sizeof(b[k].ppid));
-        read(sockp[1],b[k].uid,sizeof(b[k].uid));
-        read(sockp[1],b[k].vmsize,sizeof(b[k].vmsize));
+        read(sockp[0],b[k].name, sizeof(b[k].name));
+        read(sockp[0],b[k].state, sizeof(b[k].state));
+        read(sockp[0],b[k].ppid, sizeof(b[k].ppid));
+        read(sockp[0],b[k].uid,sizeof(b[k].uid));
+        read(sockp[0],b[k].vmsize,sizeof(b[k].vmsize));
         close(sockp[0]);
 
         FILE* fd = fopen("canal","w");
