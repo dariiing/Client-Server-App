@@ -32,7 +32,6 @@ void reading_channel(char a[])
 void reading_users_info(){
     FILE* fd= fopen("canal", "r");
     char buf[256];
-     int sec, usec;
     while(fgets(buf, 256,fd) != NULL){
         buf[strlen(buf)-1]='\0';
         fprintf(stdout, "%s\n", buf);
@@ -49,18 +48,28 @@ void reading_users_info(){
     fclose(fd);
 }
 
+void reading_proc_info(){
+    FILE* fd= fopen("canal", "r");
+    char buf[80];
+    int i;
+    for( i = 0; i < 5; i++) {
+        fgets(buf, 80, fd);
+        buf[strlen(buf)-1]='\0';
+        fprintf(stdout, "%s\n", buf);
+    }
+    fclose(fd);
+}
 int main()
 {
     int fd;
     mkfifo("canal",0666);
     char a[80], b[80];
-    int login = 0;
+    int login = 0, ok = 0, ok1 = 0;
     while(1){
-        if(strstr(a,"username")==NULL)
+        if((strstr(a,"username")==NULL && login == 0) || (strstr(a,"id")==NULL && login == 1)) 
         {
             printf("CLIENT: ");
         }
-
         // se scrie si transmite informatia catre server
         fgets(b, 80, stdin);
         writing_channel(b);
@@ -70,25 +79,36 @@ int main()
         if( strstr(b,"users")!=NULL && login == 1){ // pt comanda users
             reading_users_info();
         }
-        else{
+        else if( ok == 1 && login == 1 && ok1 == 0){ // pt comanda users
+            reading_proc_info();
+            printf("\nCLIENT: ");
+            ok1 = 1;
+        }
+        else {
+        if(strstr(b,"info") != NULL) ok1 = 0; // pt a repeta comanda info
         reading_channel(a); // pt celelalte comenzi
         printf("SERVER: %s\n", a);
+
         if( strstr(a,"User found") != NULL) {
             login = 1;
         }
-        if( strstr(a,"Logged out") != NULL) {
+        else if( strstr(a,"Logged out") != NULL) {
             login = 0;
         }
         }
 
+        //pt afisaj in consola
         if(strstr(a,"username") !=NULL){
             printf("Username: ");
         }
-
-        //goodbye ==> quit
-        if( strstr(a,"Goodbye") != NULL) {
+        else if(strstr(a,"process") !=NULL && ok1 == 0){
+            printf("PID: ");
+            ok = 1;
+        }
+        else if( strstr(a,"Goodbye") != NULL) {
             quit();
         }
+
     }
     return 0;
 }
