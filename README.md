@@ -1,8 +1,8 @@
 # Client-Server-App-
 
-About: University homework for the Computer Networks class.
+*About:* University homework for the Computer Networks class.
 
-Project details:
+*Project details:*
 Develop two applications (named "client" and "server") which communicate between them using a protocol having the following specifications:
 
 - the communication is made by executing commands read from the keyboard in the client app and executed in child processes in the server app;
