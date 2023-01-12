@@ -1,13 +1,13 @@
 # Client-Server-App-
 
-*About:* University homework for the Computer Networks class.
+## About
+University project for the Computer Networks course.
 
-*Project details:*
+## Project details
 Develop two applications (named "client" and "server") which communicate between them using a protocol having the following specifications:
 
 - the communication is made by executing commands read from the keyboard in the client app and executed in child processes in the server app;
 - the commands are strings bounded by a new line;
-- the responses are series of bytes prefixed by the length of the response;
 - the result obtained from the execution of any command will be displayed on screen by the client app;
 - the child processes in the server app do not communicate directly with the client app, only with the parent process;
 - the minimal protocol includes the following commands:
