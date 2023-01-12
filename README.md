@@ -18,3 +18,6 @@ Develop two applications (named "client" and "server") which communicate between
     - "quit".
 - no function in the "exec()" family (or other similar, like popen(), system()...) will be used to execute some system commands that offer the same functionalities;
 - the communication among processes will be done using all of the following communication mechanisms: pipes, fifos, and socketpairs.
+
+## Technologies used
+* C programming language
